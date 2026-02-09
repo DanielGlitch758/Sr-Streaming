@@ -270,24 +270,36 @@
             if(vista === 'clientes') document.getElementById('vistaClientes').classList.remove('hidden');
         }
 
-        function cambiarTabVenta(tab) {
-            const btnStream = document.getElementById('tabStreaming');
-            const btnCine = document.getElementById('tabCine');
-            const divStream = document.getElementById('camposStreaming');
-            const divCine = document.getElementById('camposCine');
+      function cambiarTabVenta(tab) {
+        const btnStream = document.getElementById('tabStreaming');
+        const btnCine = document.getElementById('tabCine');
+        const divStream = document.getElementById('camposStreaming');
+        const divCine = document.getElementById('camposCine');
 
-            if(tab === 'streaming') {
-                btnStream.className = "flex-1 py-3 text-sm font-medium text-center tab-active bg-blue-50 transition";
-                btnCine.className = "flex-1 py-3 text-sm font-medium text-center tab-inactive hover:bg-gray-50 transition";
-                divStream.classList.remove('hidden');
-                divCine.classList.add('hidden');
-            } else {
-                btnCine.className = "flex-1 py-3 text-sm font-medium text-center tab-active bg-orange-50 text-orange-600 border-orange-600 transition";
-                btnStream.className = "flex-1 py-3 text-sm font-medium text-center tab-inactive hover:bg-gray-50 transition";
-                divStream.classList.add('hidden');
-                divCine.classList.remove('hidden');
-            }
+        // Referencia a los campos obligatorios que causan conflicto
+        const inputPlataforma = document.getElementById('streamPlataforma');
+
+        if(tab === 'streaming') {
+            // ACTIVAR MODO STREAMING
+            btnStream.className = "flex-1 py-3 text-sm font-medium text-center tab-active bg-blue-50 transition";
+            btnCine.className = "flex-1 py-3 text-sm font-medium text-center tab-inactive hover:bg-gray-50 transition";
+            divStream.classList.remove('hidden');
+            divCine.classList.add('hidden');
+
+            // Hacemos OBLIGATORIO elegir plataforma
+            inputPlataforma.setAttribute('required', ''); 
+            
+        } else {
+            // ACTIVAR MODO CINE
+            btnCine.className = "flex-1 py-3 text-sm font-medium text-center tab-active bg-orange-50 text-orange-600 border-orange-600 transition";
+            btnStream.className = "flex-1 py-3 text-sm font-medium text-center tab-inactive hover:bg-gray-50 transition";
+            divStream.classList.add('hidden');
+            divCine.classList.remove('hidden');
+
+            // Hacemos OPCIONAL la plataforma (porque está oculta)
+            inputPlataforma.removeAttribute('required');
         }
+    }
 
         // Lógica visual de la calculadora de Cine
         window.calcularCine = function() {
