@@ -21,17 +21,14 @@ const auth = getAuth(app);
 // --- 3. SEGURIDAD (EL GUARDIA) ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Usuario logueado: Todo bien
         console.log("Sesión activa: ", user.email);
         const userDisplay = document.getElementById('userEmailDisplay');
         if(userDisplay) userDisplay.innerText = "Sr. Daniel"; 
     } else {
-        // Usuario NO logueado: ¡Fuera!
         window.location.href = "login.html";
     }
 });
 
-// Función Global para Cerrar Sesión (puedes vincularla a un botón después)
 window.cerrarSesion = function() {
     signOut(auth).then(() => {
         alert("Sesión cerrada. ¡Hasta pronto!");
@@ -48,36 +45,36 @@ const selectCliente = document.getElementById('selectCliente');
 
 // --- 5. GESTIÓN DE CLIENTES ---
 
-// Cargar Clientes al Select y a la Lista
 async function cargarClientes() {
     const q = query(collection(db, "clientes"), orderBy("nombre"));
     const querySnapshot = await getDocs(q);
     
-    // Limpiar select
     selectCliente.innerHTML = '<option value="">Selecciona un cliente...</option>';
     
-    // Limpiar lista visual (si existe en la vista actual)
     const listaClientesDiv = document.getElementById('listaClientes');
     if(listaClientesDiv) listaClientesDiv.innerHTML = '';
 
     querySnapshot.forEach((doc) => {
         const cliente = doc.data();
         
-        // Llenar Select del Formulario
+        // CORRECCIÓN AQUÍ: Usamos 'telefono' en lugar de 'tel' para que coincida
+        const clienteObj = { 
+            nombre: cliente.nombre, 
+            telefono: cliente.telefono || "Sin registro" // Seguro contra undefined
+        };
+
         const option = document.createElement("option");
-        // Guardamos nombre y teléfono en el value para usarlos al vender
-        option.value = JSON.stringify({ nombre: cliente.nombre, tel: cliente.telefono }); 
+        option.value = JSON.stringify(clienteObj); 
         option.text = cliente.nombre;
         selectCliente.appendChild(option);
 
-        // Llenar Tarjeta en Vista Clientes
         if(listaClientesDiv) {
             const card = `
                 <div class="p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
                     <div class="flex justify-between items-start">
                         <div>
                             <h4 class="font-bold text-gray-800">${cliente.nombre}</h4>
-                            <p class="text-sm text-gray-500"><i class="fab fa-whatsapp text-green-500"></i> ${cliente.telefono}</p>
+                            <p class="text-sm text-gray-500"><i class="fab fa-whatsapp text-green-500"></i> ${cliente.telefono || 'Sin tel'}</p>
                         </div>
                         <a href="https://wa.me/${cliente.telefono}" target="_blank" class="p-2 bg-green-100 text-green-600 rounded-full hover:bg-green-200">
                             <i class="fas fa-comment-dots"></i>
@@ -89,7 +86,6 @@ async function cargarClientes() {
     });
 }
 
-// Guardar Nuevo Cliente
 if(formCliente) {
     formCliente.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -101,7 +97,7 @@ if(formCliente) {
             alert("Cliente guardado correctamente");
             document.getElementById('modalCliente').classList.add('hidden');
             formCliente.reset();
-            cargarClientes(); // Recargar listas
+            cargarClientes(); 
         } catch (error) {
             console.error("Error: ", error);
             alert("Error al guardar cliente");
@@ -111,12 +107,10 @@ if(formCliente) {
 
 // --- 6. GESTIÓN DE VENTAS ---
 
-// Guardar Venta (Streaming o Cine)
 if(formVenta) {
     formVenta.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Determinar qué tipo de venta es (basado en la visibilidad de las tabs)
         const esStreaming = !document.getElementById('camposStreaming').classList.contains('hidden');
         
         // Obtener datos del cliente seleccionado
@@ -125,17 +119,16 @@ if(formVenta) {
 
         let nuevaVenta = {
             cliente: clienteData.nombre,
-            telefono: clienteData.telefono,
+            // CORRECCIÓN AQUÍ: Aseguramos que nunca sea undefined
+            telefono: clienteData.telefono || "Sin registro", 
             fechaVenta: new Date().toISOString(),
             tipoVenta: esStreaming ? 'streaming' : 'cine'
         };
 
         if (esStreaming) {
-            // Datos Streaming
             const costo = parseFloat(document.getElementById('streamCosto').value) || 0;
             const precio = parseFloat(document.getElementById('streamPrecio').value) || 0;
             
-            // Aquí lee el valor escrito o seleccionado del input list
             nuevaVenta.servicio = document.getElementById('streamPlataforma').value; 
             nuevaVenta.detalle = document.getElementById('streamTipo').value;
             nuevaVenta.vencimiento = document.getElementById('streamVencimiento').value;
@@ -144,17 +137,15 @@ if(formVenta) {
             nuevaVenta.ganancia = precio - costo;
 
         } else {
-            // Datos Cine (Calculadora 50/30/20)
             const precioReal = parseFloat(document.getElementById('cinePrecioReal').value) || 0;
             
             nuevaVenta.servicio = "Cinépolis";
             nuevaVenta.detalle = document.getElementById('cineDetalle').value;
-            nuevaVenta.vencimiento = "N/A"; // Cine no tiene vencimiento mensual
+            nuevaVenta.vencimiento = "N/A"; 
             
-            // Lógica de negocio dura:
-            nuevaVenta.precio = precioReal * 0.50; // Cobrado al cliente
-            nuevaVenta.costo = precioReal * 0.30;  // Pago a proveedor
-            nuevaVenta.ganancia = precioReal * 0.20; // Tu ganancia
+            nuevaVenta.precio = precioReal * 0.50; 
+            nuevaVenta.costo = precioReal * 0.30; 
+            nuevaVenta.ganancia = precioReal * 0.20; 
         }
 
         try {
@@ -162,17 +153,16 @@ if(formVenta) {
             alert(`¡Venta de ${nuevaVenta.servicio} registrada! Ganancia: $${nuevaVenta.ganancia}`);
             document.getElementById('modalVenta').classList.add('hidden');
             formVenta.reset();
-            cargarVentas(); // Actualizar dashboard
+            cargarVentas(); 
         } catch (error) {
             console.error("Error venta: ", error);
-            alert("Hubo un error al registrar la venta");
+            alert("Hubo un error al registrar la venta (Revisa la consola)");
         }
     });
 }
 
-// Cargar Ventas en Dashboard y Calcular Totales
+// Cargar Ventas en Dashboard
 async function cargarVentas() {
-    // Si no estamos en el dashboard (por ejemplo, si estamos en login), no ejecutar esto
     if(!document.getElementById('tablaVentasBody')) return;
 
     const q = query(collection(db, "ventas"), orderBy("fechaVenta", "desc"));
@@ -188,9 +178,8 @@ async function cargarVentas() {
 
     querySnapshot.forEach((doc) => {
         const venta = doc.data();
-        totalGanancia += venta.ganancia;
+        totalGanancia += (venta.ganancia || 0); // Evitar NaN si falta el dato
 
-        // Lógica Semáforo Streaming
         let estadoHTML = '';
         let colorFila = '';
         
@@ -205,7 +194,7 @@ async function cargarVentas() {
             } else if (diferenciaDias <= 3) {
                 cuentasPorVencer++;
                 estadoHTML = `<span class="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-bold">⚠ ${diferenciaDias} días</span>`;
-                colorFila = 'bg-red-50'; // Resaltar fila completa
+                colorFila = 'bg-red-50'; 
             } else if (diferenciaDias <= 7) {
                 estadoHTML = `<span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">⏳ ${diferenciaDias} días</span>`;
             } else {
@@ -215,7 +204,6 @@ async function cargarVentas() {
             estadoHTML = `<span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">Cine</span>`;
         }
 
-        // Generar Fila
         const fila = `
             <tr class="border-b hover:bg-gray-50 ${colorFila}">
                 <td class="p-4">
@@ -235,7 +223,7 @@ async function cargarVentas() {
                     <div class="text-sm">${venta.vencimiento !== 'N/A' ? venta.vencimiento : new Date(venta.fechaVenta).toLocaleDateString()}</div>
                     <div class="mt-1">${estadoHTML}</div>
                 </td>
-                <td class="p-4 font-bold text-green-600">+$${venta.ganancia.toFixed(0)}</td>
+                <td class="p-4 font-bold text-green-600">+$${(venta.ganancia || 0).toFixed(0)}</td>
                 <td class="p-4 text-center">
                     <button onclick="copiarDatos('${venta.servicio}', '${venta.cliente}', '${venta.vencimiento}')" class="text-gray-400 hover:text-blue-600" title="Copiar datos para WhatsApp">
                         <i class="far fa-copy"></i>
@@ -246,7 +234,6 @@ async function cargarVentas() {
         tablaBody.innerHTML += fila;
     });
 
-    // Actualizar Tarjetas Superiores
     if(document.getElementById('statGanancia')) {
         document.getElementById('statGanancia').innerText = `$${totalGanancia.toFixed(0)}`;
         document.getElementById('statActivas').innerText = cuentasActivas;
@@ -254,7 +241,6 @@ async function cargarVentas() {
     }
 }
 
-// Función Global para Copiar al Portapapeles (Accesible desde HTML)
 window.copiarDatos = function(servicio, cliente, vencimiento) {
     const texto = `Hola ${cliente} 👋\nAquí tienes los datos de tu servicio ${servicio}.\nVencimiento: ${vencimiento}\n¡Gracias por tu compra en Sr. Stream!`;
     navigator.clipboard.writeText(texto).then(() => {
@@ -262,7 +248,6 @@ window.copiarDatos = function(servicio, cliente, vencimiento) {
     });
 }
 
-// Inicializar funciones al cargar
 cargarClientes();
 cargarVentas();
-console.log("🔥 Sistema Sr. Stream v2.1 (Seguro) Iniciado");
+console.log("🔥 Sistema Sr. Stream v2.2 (Depurado) Iniciado");
