@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Sr. Stream - Panel de Control</title>
+    <style>
+        :root {
+            --primary: #0a192f; /* Azul Marino Profundo */
+            --accent: #c5a059;  /* Dorado Elegante */
+            --bg: #f4f6f8;
+            --text: #333;
+            --white: #ffffff;
+            --danger: #d32f2f;
+            --success: #2e7d32;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
+        
+        .header-main { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #e0e0e0; padding-bottom: 20px; }
+        .header-main h1 { color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 1.8rem; }
+        .header-main p { color: #666; font-size: 0.9em; margin-top: 5px; }
+
+        /* Contenedor Principal (Flexbox) */
+        .workspace { display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: flex-start; }
+
+        /* Tarjetas */
+        .card { background: var(--white); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); flex: 1; min-width: 350px; max-width: 500px; border: 1px solid rgba(0,0,0,0.05); }
+        .card-title { color: var(--primary); font-size: 1.2em; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Formulario */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.8em; color: #555; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; box-sizing: border-box; transition: 0.3s; background: #fafafa; }
+        input:focus, select:focus { border-color: var(--accent); outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15); }
+
+        .btn-action { background: linear-gradient(135deg, var(--primary) 0%, #112240 100%); color: var(--accent); border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; transition: 0.2s; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .btn-action:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        /* --- VISTA PREVIA NOTA (DISEÑO TICKET) --- */
+        #ticket-visual { 
+            background: white; 
+            border-radius: 0; 
+            overflow: hidden; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2); 
+            border: 1px solid #eee; 
+            position: relative; 
+            max-width: 380px; 
+            margin: auto; 
+        }
+        
+        /* Marca de Agua */
+        .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 60px; color: #000; opacity: 0.04; font-weight: 900; pointer-events: none; white-space: nowrap; z-index: 0; }
+
+        .t-header { 
+            background: linear-gradient(135deg, var(--primary) 0%, #000 100%); 
+            padding: 30px 20px; 
+            text-align: center; 
+            color: var(--accent); 
+            position: relative; 
+            z-index: 1;
+        }
+        
+        /* Círculos decorativos ticket */
+        .circle-cut { width: 20px; height: 20px; background: var(--bg); border-radius: 50%; position: absolute; bottom: -10px; z-index: 2; }
+        .cut-left { left: -10px; }
+        .cut-right { right: -10px; }
+
+        .t-body { padding: 30px 25px 20px 25px; position: relative; z-index: 1; }
+
+        .t-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; font-size: 0.9em; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+        .t-label { font-size: 0.7em; color: #999; text-transform: uppercase; font-weight: bold; }
+        .t-value { font-weight: 600; color: #333; font-size: 1.1em; }
+
+        .product-box { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); margin: 20px 0; }
+
+        .t-total-section { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--primary); }
+        
+        .qr-section { display: flex; align-items: center; gap: 15px; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .legal-text { font-size: 0.55em; color: #777; line-height: 1.3; text-align: justify; flex: 1; }
+
+        .status-badge { font-size: 0.7em; font-weight: bold; padding: 4px 8px; border: 1px solid; border-radius: 4px; text-transform: uppercase; display: inline-block; }
+
+        /* Tabla de Historial */
+        .history-section { width: 100%; max-width: 1000px; margin: 50px auto; background: var(--white); padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 15px; color: var(--primary); font-size: 0.85em; text-transform: uppercase; border-bottom: 2px solid #eee; }
+        td { padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 0.9em; color: #444; }
+        tr:hover { background-color: #f9f9f9; }
+        
+        /* Etiquetas Tabla */
+        .tag { padding: 4px 10px; border-radius: 20px; font-size: 0.75em; font-weight: bold; }
+        .tag-streaming { background: #e3f2fd; color: #1565c0; }
+        .tag-cine { background: #ffebee; color: #c62828; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-main">
+        <h1>Sr. Stream 👔</h1>
+        <p>Panel de Administración & Ventas</p>
+    </div>
+
+    <div class="workspace">
+        
+        <div class="card">
+            <div class="card-title">
+                <span>Registrar Venta</span>
+                <span>✏️</span>
+            </div>
+            <form id="ventaForm">
+                <div class="form-group">
+                    <label>Nombre del Cliente</label>
+                    <input type="text" id="cliente" placeholder="Ej: Juan Pérez" required oninput="actualizarVista()">
+                </div>
+                
+                <div class="form-group" style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>Tipo de Servicio</label>
+                        <select id="tipo" onchange="actualizarVista()">
+                            <option value="Streaming">📺 Streaming</option>
+                            <option value="Cine">🍿 Cinepolis</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Fecha</label>
+                        <input type="date" id="fecha" required oninput="actualizarVista()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Producto / Paquete</label>
+                    <input type="text" id="producto" placeholder="Ej: Netflix 4K (1 Mes)" required oninput="actualizarVista()">
+                </div>
+
+                <div class="form-group">
+                    <label>Detalles / Contraseña (Uso Interno)</label>
+                    <input type="text" id="detalles" placeholder="Ej: user@mail.com | Pass123" oninput="actualizarVista()">
+                </div>
+
+                <div class="form-group" style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>Precio Total ($)</label>
+                        <input type="number" id="precio" placeholder="0.00" required oninput="actualizarVista()">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Estado del Pago</label>
+                        <select id="estado" onchange="actualizarVista()">
+                            <option value="PAGADO">✅ Pagado</option>
+                            <option value="PENDIENTE">⏳ Pendiente</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-action" id="btnGuardar">💾 REGISTRAR Y GUARDAR</button>
+            </form>
+        </div>
+
+        <div class="card" style="background: transparent; box-shadow: none; padding: 0; border: none;">
+            <div id="ticket-visual">
+                
+                <div class="watermark">SR. STREAM</div>
+
+                <div class="t-header">
+                    <div style="font-size: 50px; margin-bottom: 5px;">🎀</div>
+                    <h2 style="margin:0; font-size: 2em; letter-spacing: 3px; font-weight: 800;">SR. STREAM</h2>
+                    <p style="margin: 5px 0 0; font-size: 0.8em; letter-spacing: 1px; opacity: 0.8;">TICKET DE VENTA DIGITAL</p>
+                    
+                    <div class="circle-cut cut-left"></div>
+                    <div class="circle-cut cut-right"></div>
+                </div>
+
+                <div class="t-body">
+                    <div class="t-row">
+                        <div>
+                            <div class="t-label">Cliente</div>
+                            <div class="t-value" id="v-cliente" style="color:var(--primary);">Cliente VIP</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="t-label">Fecha</div>
+                            <div class="t-value" id="v-fecha">--/--/--</div>
+                        </div>
+                    </div>
+
+                    <div class="product-box">
+                        <div class="t-label" style="margin-bottom: 5px;">PRODUCTO ADQUIRIDO</div>
+                        <div id="v-producto" style="font-weight: 800; color: var(--primary); font-size: 1.1em; line-height: 1.2;">Paquete Premium</div>
+                        <div id="v-subtitulo" style="font-size: 0.8em; color: #666; margin-top: 5px;">✔️ Servicio Verificado</div>
+                    </div>
+
+                    <div class="t-total-section">
+                        <div id="v-estado" class="status-badge" style="color: var(--success); border-color: var(--success);">PAGADO</div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 1em; color: #666; margin-right: 10px;">TOTAL:</span>
+                            <span id="v-precio" style="font-size: 1.8em; font-weight: 900; color: var(--primary);">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="qr-section">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://wa.me/529673602288" alt="QR WhatsApp" style="width: 70px; height: 70px; border-radius: 4px;">
+                        
+                        <div class="legal-text">
+                            <strong>GARANTÍA Y SOPORTE:</strong><br>
+                            En caso de fallos, repórtalo inmediatamente a nuestro chat escaneando este código o al <strong>+52 967 360 2288</strong>.
+                            <br><br>
+                            <em>Nota: Cuentas de streaming pierden garantía si se modifican datos de acceso. Boletos válidos solo fecha indicada.</em>
+                            <br>
+                            <div style="margin-top: 5px; text-align: right; color: var(--primary);">Folio: <span id="v-folio">#0000</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: radial-gradient(circle, transparent 50%, white 50%); background-size: 10px 10px; height: 10px; width: 100%; position: absolute; bottom: -5px; z-index: 2;"></div>
+            </div>
+            
+            <p style="text-align: center; font-size: 0.8em; color: #888; margin-top: 15px;">
+                📸 <strong>Instrucciones:</strong> Haga captura de pantalla de la tarjeta para enviarla.
+            </p>
+        </div>
+
+    </div>
+
+    <div class="history-section">
+        <div class="card-title">
+            <span>Bitácora de Movimientos (Nube)</span>
+            <span style="font-size: 0.8em; color: #666;">☁️ Firebase Connected</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table id="tablaVentas">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Folio</th>
+                        <th>Cliente</th>
+                        <th>Producto</th>
+                        <th>Tipo</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBody">
+                    <tr><td colspan="7" style="text-align:center; padding: 20px;">Cargando base de datos Sr. Stream...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        // 1. IMPORTAR FIREBASE
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } 
+        from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        // 2. CONFIGURACIÓN EXACTA (SR. STREAM)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwND4K2tKyQD37R_Gt160PwskGNs-1LhU",
+            authDomain: "sr-streaming-e13ac.firebaseapp.com",
+            projectId: "sr-streaming-e13ac",
+            storageBucket: "sr-streaming-e13ac.firebasestorage.app",
+            messagingSenderId: "779948636138",
+            appId: "1:779948636138:web:5ceaf4ce15caa88d5d6493",
+            measurementId: "G-FLRJFC21L3"
+        };
+
+        // 3. INICIALIZAR APP
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- LÓGICA VISUAL (UI) ---
+        
+        // Fecha de hoy por defecto
+        document.getElementById('fecha').valueAsDate = new Date();
+        
+        window.actualizarVista = function() {
+            // Obtener valores
+            const cliente = document.getElementById('cliente').value || 'Cliente VIP';
+            const fecha = document.getElementById('fecha').value;
+            const producto = document.getElementById('producto').value || 'Paquete Premium';
+            const precio = parseFloat(document.getElementById('precio').value) || 0;
+            const estado = document.getElementById('estado').value;
+            const tipo = document.getElementById('tipo').value; // Streaming o Cine
+
+            // Actualizar DOM del Ticket
+            document.getElementById('v-cliente').textContent = cliente;
+            document.getElementById('v-fecha').textContent = fecha;
+            document.getElementById('v-producto').textContent = producto;
+            document.getElementById('v-precio').textContent = '$' + precio.toFixed(2);
+            
+            // Lógica Inteligente para el Subtítulo
+            const subtituloDiv = document.getElementById('v-subtitulo');
+            if (tipo === 'Cine') {
+                subtituloDiv.textContent = "✔️ Válido en Taquilla / Dulcería";
+            } else {
+                subtituloDiv.textContent = "✔️ Acceso & Garantía Total";
+            }
+            
+            const badge = document.getElementById('v-estado');
+            badge.textContent = estado;
+            
+            if(estado === 'PAGADO'){
+                badge.style.color = '#2e7d32'; 
+                badge.style.borderColor = '#2e7d32';
+            } else {
+                badge.style.color = '#f57f17'; 
+                badge.style.borderColor = '#f57f17';
+            }
+
+            // Generar folio visual temporal (aleatorio hasta guardar)
+            if(document.getElementById('v-folio').textContent === '#0000') {
+                document.getElementById('v-folio').textContent = '#' + Math.floor(Math.random()*9000 + 1000);
+            }
+        }
+        
+        // Inicializar vista
+        actualizarVista();
+
+        // --- LÓGICA BASE DE DATOS (FIREBASE) ---
+
+        // GUARDAR VENTA
+        document.getElementById('btnGuardar').addEventListener('click', async () => {
+            const btn = document.getElementById('btnGuardar');
+            
+            // Validaciones simples
+            const cliente = document.getElementById('cliente').value;
+            const precio = document.getElementById('precio').value;
+            if(!cliente || !precio) { alert("Por favor complete Cliente y Precio"); return; }
+
+            btn.textContent = "Guardando en la nube...";
+            btn.disabled = true;
+
+            try {
+                // Generar folio único basado en timestamp
+                const folioUnico = Date.now().toString().slice(-6);
+
+                const ventaNueva = {
+                    folio: folioUnico,
+                    cliente: cliente,
+                    tipo: document.getElementById('tipo').value,
+                    fecha: document.getElementById('fecha').value,
+                    producto: document.getElementById('producto').value,
+                    detalles: document.getElementById('detalles').value, 
+                    precio: parseFloat(precio),
+                    estado: document.getElementById('estado').value,
+                    creado: serverTimestamp()
+                };
+
+                await addDoc(collection(db, "ventas"), ventaNueva);
+
+                // Actualizar folio en el ticket visual para la captura final
+                document.getElementById('v-folio').textContent = '#' + folioUnico;
+
+                alert("¡Venta Guardada Exitosamente!");
+                
+                // Limpiar campos clave
+                document.getElementById('cliente').value = '';
+                document.getElementById('producto').value = '';
+                document.getElementById('detalles').value = '';
+                document.getElementById('precio').value = '';
+                actualizarVista();
+
+            } catch (e) {
+                console.error("Error:", e);
+                alert("Error al conectar con Firebase: " + e.message);
+            } finally {
+                btn.textContent = "💾 REGISTRAR Y GUARDAR";
+                btn.disabled = false;
+            }
+        });
+
+        // LEER VENTAS (TABLA EN TIEMPO REAL)
+        const q = query(collection(db, "ventas"), orderBy("fecha", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            const tbody = document.getElementById('tablaBody');
+            tbody.innerHTML = "";
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const tipoClass = data.tipo === 'Streaming' ? 'tag-streaming' : 'tag-cine';
+                const estadoColor = data.estado === 'PAGADO' ? 'green' : 'orange';
+                
+                const row = `
+                    <tr>
+                        <td>${data.fecha}</td>
+                        <td style="font-family:monospace; color:#666;">#${data.folio || '---'}</td>
+                        <td><strong>${data.cliente}</strong></td>
+                        <td>${data.producto}</td>
+                        <td><span class="tag ${tipoClass}">${data.tipo}</span></td>
+                        <td style="font-weight:bold;">$${data.precio.toFixed(2)}</td>
+                        <td style="color:${estadoColor}; font-weight:bold; font-size:0.8em;">${data.estado}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            if(snapshot.empty) {
+                tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#999;'>No hay registros aún. ¡Realiza tu primera venta!</td></tr>";
+            }
+        });
+
+    </script>
+</body>
+</html>
